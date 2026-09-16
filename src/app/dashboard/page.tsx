@@ -10,27 +10,43 @@ type Measurement = {
   weight_kg: number;
 };
 
+type SportSession = {
+  id: string;
+  started_at: string;
+};
+
 export default function DashboardPage() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [sportSessions, setSportSessions] = useState<SportSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
       const supabase = createClient();
 
-      const { data, error } = await supabase
-        .from("body_measurements")
-        .select("id, measured_on, weight_kg")
-        .order("measured_on", { ascending: false });
+      const [
+        { data: measurementData },
+        { data: sportData }
+      ] = await Promise.all([
+        supabase
+          .from("body_measurements")
+          .select("id, measured_on, weight_kg")
+          .order("measured_on", { ascending: false }),
 
-      if (!error) {
-        setMeasurements(
-          (data ?? []).map((item) => ({
-            ...item,
-            weight_kg: Number(item.weight_kg),
-          }))
-        );
-      }
+        supabase
+          .from("sport_sessions")
+          .select("id, started_at")
+          .order("started_at", { ascending: false })
+      ]);
+
+      setMeasurements(
+        (measurementData ?? []).map((item) => ({
+          ...item,
+          weight_kg: Number(item.weight_kg),
+        }))
+      );
+
+      setSportSessions(sportData ?? []);
 
       setLoading(false);
     }
@@ -40,23 +56,32 @@ export default function DashboardPage() {
 
   const currentWeight = measurements[0]?.weight_kg ?? null;
 
-  const measuredThisWeek = useMemo(() => {
-    if (measurements.length === 0) return false;
-
+  const startOfWeek = useMemo(() => {
     const now = new Date();
+    const monday = new Date(now);
 
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
+    const day = monday.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
 
-    startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
-    startOfWeek.setHours(0, 0, 0, 0);
+    monday.setDate(monday.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
 
-    return measurements.some((item) => {
-      const date = new Date(item.measured_on);
-      return date >= startOfWeek;
-    });
-  }, [measurements]);
+    return monday;
+  }, []);
+
+  const measuredThisWeek = useMemo(() => {
+    return measurements.some(
+      (item) => new Date(item.measured_on) >= startOfWeek
+    );
+  }, [measurements, startOfWeek]);
+
+  const sportThisWeek = useMemo(() => {
+    return sportSessions.filter(
+      (session) => new Date(session.started_at) >= startOfWeek
+    ).length;
+  }, [sportSessions, startOfWeek]);
+
+  const sportTarget = 5;
 
   const fourWeekTrend = useMemo(() => {
     if (measurements.length < 2) return null;
@@ -117,7 +142,9 @@ export default function DashboardPage() {
           <div className="list">
             <div className="row">
               <span>Sportmomenten halen</span>
-              <strong>0/5</strong>
+              <strong>
+                {sportThisWeek}/{sportTarget}
+              </strong>
             </div>
 
             <div className="row">
@@ -138,7 +165,12 @@ export default function DashboardPage() {
           <div className="metric">
             <div>
               <div className="subtle">Sport</div>
-              <div className="metric-value">0 / 5</div>
+
+              <div className="metric-value">
+                {loading
+                  ? "..."
+                  : `${sportThisWeek} / ${sportTarget}`}
+              </div>
             </div>
 
             <span className="pill">⚽ week</span>
@@ -215,6 +247,7 @@ export default function DashboardPage() {
         <Link href="/agenda" className="card">
           <div className="subtle">Agenda</div>
           <h3>Nog niet gekoppeld</h3>
+
           <p className="subtle">
             In v1 tonen we eigen afspraken; iCloud/werkagenda volgt daarna.
           </p>
