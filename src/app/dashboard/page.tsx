@@ -15,18 +15,27 @@ type SportSession = {
   started_at: string;
 };
 
+type DailyCheckin = {
+  checkin_date: string;
+  water_liters: number | null;
+  alcohol_drinks: number | null;
+};
+
 export default function DashboardPage() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [sportSessions, setSportSessions] = useState<SportSession[]>([]);
+  const [todayCheckin, setTodayCheckin] = useState<DailyCheckin | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
       const supabase = createClient();
+      const today = new Date().toISOString().slice(0, 10);
 
       const [
         { data: measurementData },
-        { data: sportData }
+        { data: sportData },
+        { data: checkinData },
       ] = await Promise.all([
         supabase
           .from("body_measurements")
@@ -36,7 +45,13 @@ export default function DashboardPage() {
         supabase
           .from("sport_sessions")
           .select("id, started_at")
-          .order("started_at", { ascending: false })
+          .order("started_at", { ascending: false }),
+
+        supabase
+          .from("daily_checkins")
+          .select("checkin_date, water_liters, alcohol_drinks")
+          .eq("checkin_date", today)
+          .maybeSingle(),
       ]);
 
       setMeasurements(
@@ -47,6 +62,20 @@ export default function DashboardPage() {
       );
 
       setSportSessions(sportData ?? []);
+
+      if (checkinData) {
+        setTodayCheckin({
+          checkin_date: checkinData.checkin_date,
+          water_liters:
+            checkinData.water_liters === null
+              ? null
+              : Number(checkinData.water_liters),
+          alcohol_drinks:
+            checkinData.alcohol_drinks === null
+              ? null
+              : Number(checkinData.alcohol_drinks),
+        });
+      }
 
       setLoading(false);
     }
@@ -228,21 +257,35 @@ export default function DashboardPage() {
       </div>
 
       <section className="grid two">
-        <div className="card">
+        <Link href="/dashboard/check-in" className="card">
           <div className="subtle">Water & alcohol</div>
 
           <div className="list">
             <div className="row">
               <span>💧 Water</span>
-              <strong>— L</strong>
+              <strong>
+                {loading
+                  ? "..."
+                  : todayCheckin?.water_liters !== null &&
+                      todayCheckin?.water_liters !== undefined
+                    ? `${todayCheckin.water_liters.toFixed(1)} L`
+                    : "— L"}
+              </strong>
             </div>
 
             <div className="row">
               <span>🍺 Alcohol</span>
-              <strong>—</strong>
+              <strong>
+                {loading
+                  ? "..."
+                  : todayCheckin?.alcohol_drinks !== null &&
+                      todayCheckin?.alcohol_drinks !== undefined
+                    ? todayCheckin.alcohol_drinks
+                    : "—"}
+              </strong>
             </div>
           </div>
-        </div>
+        </Link>
 
         <Link href="/agenda" className="card">
           <div className="subtle">Agenda</div>
