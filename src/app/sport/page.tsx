@@ -1,11 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type SportSession = {
   id: string;
-  sport_type: "football" | "padel" | "gym" | "running" | "swimming";
+  sport_type:
+    | "football"
+    | "padel"
+    | "gym"
+    | "running"
+    | "swimming";
   started_at: string;
   duration_minutes: number | null;
   distance_km: number | null;
@@ -14,7 +20,10 @@ type SportSession = {
   notes: string | null;
 };
 
-const SPORT_LABELS: Record<SportSession["sport_type"], string> = {
+const SPORT_LABELS: Record<
+  SportSession["sport_type"],
+  string
+> = {
   football: "Voetbal",
   padel: "Padel",
   gym: "Gym",
@@ -23,11 +32,21 @@ const SPORT_LABELS: Record<SportSession["sport_type"], string> = {
 };
 
 export default function SportPage() {
-  const [sessions, setSessions] = useState<SportSession[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [sessions, setSessions] = useState<
+    SportSession[]
+  >([]);
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
 
   async function loadSessions() {
     setLoading(true);
@@ -39,9 +58,20 @@ export default function SportPage() {
       const { data, error } = await supabase
         .from("sport_sessions")
         .select(
-          "id, sport_type, started_at, duration_minutes, distance_km, avg_heart_rate, perceived_effort, notes"
+          `
+          id,
+          sport_type,
+          started_at,
+          duration_minutes,
+          distance_km,
+          avg_heart_rate,
+          perceived_effort,
+          notes
+          `
         )
-        .order("started_at", { ascending: false });
+        .order("started_at", {
+          ascending: false,
+        });
 
       if (error) {
         setMessage(error.message);
@@ -51,21 +81,40 @@ export default function SportPage() {
       setSessions(
         (data ?? []).map((item) => ({
           ...item,
+
           duration_minutes:
-            item.duration_minutes === null ? null : Number(item.duration_minutes),
-          distance_km:
-            item.distance_km === null ? null : Number(item.distance_km),
-          avg_heart_rate:
-            item.avg_heart_rate === null ? null : Number(item.avg_heart_rate),
-          perceived_effort:
-            item.perceived_effort === null
+            item.duration_minutes === null
               ? null
-              : Number(item.perceived_effort),
+              : Number(
+                  item.duration_minutes
+                ),
+
+          distance_km:
+            item.distance_km === null
+              ? null
+              : Number(item.distance_km),
+
+          avg_heart_rate:
+            item.avg_heart_rate === null
+              ? null
+              : Number(
+                  item.avg_heart_rate
+                ),
+
+          perceived_effort:
+            item.perceived_effort ===
+            null
+              ? null
+              : Number(
+                  item.perceived_effort
+                ),
         }))
       );
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Sportmomenten laden mislukt."
+        error instanceof Error
+          ? error.message
+          : "Sportmomenten laden mislukt."
       );
     } finally {
       setLoading(false);
@@ -76,23 +125,46 @@ export default function SportPage() {
     loadSessions();
   }, []);
 
-  async function submitSession(e: FormEvent<HTMLFormElement>) {
+  async function submitSession(
+    e: FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
+
     setSaving(true);
     setMessage("");
 
-    const form = new FormData(e.currentTarget);
+    const form = new FormData(
+      e.currentTarget
+    );
 
     const sportType = String(
       form.get("sport_type")
     ) as SportSession["sport_type"];
 
-    const startedAt = String(form.get("started_at") || "");
-    const durationRaw = String(form.get("duration_minutes") || "").trim();
-    const distanceRaw = String(form.get("distance_km") || "").trim();
-    const heartRateRaw = String(form.get("avg_heart_rate") || "").trim();
-    const effortRaw = String(form.get("perceived_effort") || "").trim();
-    const notes = String(form.get("notes") || "").trim();
+    const startedAt = String(
+      form.get("started_at") || ""
+    );
+
+    const durationRaw = String(
+      form.get("duration_minutes") || ""
+    ).trim();
+
+    const distanceRaw = String(
+      form.get("distance_km") || ""
+    ).trim();
+
+    const heartRateRaw = String(
+      form.get("avg_heart_rate") || ""
+    ).trim();
+
+    const effortRaw = String(
+      form.get("perceived_effort") ||
+        ""
+    ).trim();
+
+    const notes = String(
+      form.get("notes") || ""
+    ).trim();
 
     try {
       const supabase = createClient();
@@ -103,21 +175,43 @@ export default function SportPage() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setMessage("Je bent niet ingelogd.");
+        setMessage(
+          "Je bent niet ingelogd."
+        );
+
         setSaving(false);
         return;
       }
 
-      const { error } = await supabase.from("sport_sessions").insert({
-        user_id: user.id,
-        sport_type: sportType,
-        started_at: new Date(startedAt).toISOString(),
-        duration_minutes: durationRaw ? Number(durationRaw) : null,
-        distance_km: distanceRaw ? Number(distanceRaw) : null,
-        avg_heart_rate: heartRateRaw ? Number(heartRateRaw) : null,
-        perceived_effort: effortRaw ? Number(effortRaw) : null,
-        notes: notes || null,
-      });
+      const { error } = await supabase
+        .from("sport_sessions")
+        .insert({
+          user_id: user.id,
+
+          sport_type: sportType,
+
+          started_at: new Date(
+            startedAt
+          ).toISOString(),
+
+          duration_minutes: durationRaw
+            ? Number(durationRaw)
+            : null,
+
+          distance_km: distanceRaw
+            ? Number(distanceRaw)
+            : null,
+
+          avg_heart_rate: heartRateRaw
+            ? Number(heartRateRaw)
+            : null,
+
+          perceived_effort: effortRaw
+            ? Number(effortRaw)
+            : null,
+
+          notes: notes || null,
+        });
 
       if (error) {
         setMessage(error.message);
@@ -126,44 +220,83 @@ export default function SportPage() {
       }
 
       setShowForm(false);
+
       await loadSessions();
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Opslaan mislukt."
+        error instanceof Error
+          ? error.message
+          : "Opslaan mislukt."
       );
     } finally {
       setSaving(false);
     }
   }
 
-  const sessionsThisWeek = useMemo(() => {
-    const now = new Date();
+  const sessionsThisWeek =
+    useMemo(() => {
+      const now = new Date();
 
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
+      const startOfWeek =
+        new Date(now);
 
-    startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
-    startOfWeek.setHours(0, 0, 0, 0);
+      const day =
+        startOfWeek.getDay();
 
-    return sessions.filter(
-      (session) => new Date(session.started_at) >= startOfWeek
-    );
-  }, [sessions]);
+      const diffToMonday =
+        day === 0 ? -6 : 1 - day;
 
-  const weekCount = sessionsThisWeek.length;
+      startOfWeek.setDate(
+        startOfWeek.getDate() +
+          diffToMonday
+      );
+
+      startOfWeek.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      return sessions.filter(
+        (session) =>
+          new Date(
+            session.started_at
+          ) >= startOfWeek
+      );
+    }, [sessions]);
+
+  const weekCount =
+    sessionsThisWeek.length;
+
   const weekTarget = 5;
-  const progress = Math.min((weekCount / weekTarget) * 100, 100);
 
-  function formatDuration(minutes: number | null) {
-    if (!minutes) return null;
+  const progress = Math.min(
+    (weekCount / weekTarget) * 100,
+    100
+  );
 
-    if (minutes < 60) return `${minutes} min`;
+  function formatDuration(
+    minutes: number | null
+  ) {
+    if (!minutes) {
+      return null;
+    }
 
-    const hours = Math.floor(minutes / 60);
-    const remaining = minutes % 60;
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
 
-    if (remaining === 0) return `${hours}u`;
+    const hours = Math.floor(
+      minutes / 60
+    );
+
+    const remaining =
+      minutes % 60;
+
+    if (remaining === 0) {
+      return `${hours}u`;
+    }
 
     return `${hours}u ${remaining}m`;
   }
@@ -172,41 +305,120 @@ export default function SportPage() {
     <>
       <div className="section-title">
         <div>
-          <div className="subtle">Training</div>
+          <div className="subtle">
+            Training
+          </div>
+
           <h1>Sport</h1>
         </div>
 
-        <button className="btn" onClick={() => setShowForm((value) => !value)}>
-          {showForm ? "Annuleren" : "+ Sportmoment"}
+        <button
+          className="btn"
+          onClick={() =>
+            setShowForm(
+              (value) => !value
+            )
+          }
+        >
+          {showForm
+            ? "Annuleren"
+            : "+ Sportmoment"}
         </button>
       </div>
 
+      <Link
+        href="/sport/gym"
+        className="card"
+        style={{
+          marginBottom: 22,
+          display: "block",
+        }}
+      >
+        <div className="metric">
+          <div>
+            <div className="subtle">
+              Krachttraining
+            </div>
+
+            <div className="metric-value">
+              Gym Pro
+            </div>
+          </div>
+
+          <span className="pill">
+            🏆 PR tracker
+          </span>
+        </div>
+
+        <p className="subtle">
+          Start een gymtraining, log
+          sets, reps en gewicht en laat
+          Finn OS automatisch je PR&apos;s
+          herkennen.
+        </p>
+      </Link>
+
       {showForm && (
-        <div className="card" style={{ marginBottom: 22 }}>
-          <form className="form" onSubmit={submitSession}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 22,
+          }}
+        >
+          <form
+            className="form"
+            onSubmit={submitSession}
+          >
             <div className="field">
               <label>Sport</label>
-              <select name="sport_type" defaultValue="gym" required>
-                <option value="football">Voetbal</option>
-                <option value="padel">Padel</option>
-                <option value="gym">Gym</option>
-                <option value="running">Hardlopen</option>
-                <option value="swimming">Zwemmen</option>
+
+              <select
+                name="sport_type"
+                defaultValue="football"
+                required
+              >
+                <option value="football">
+                  Voetbal
+                </option>
+
+                <option value="padel">
+                  Padel
+                </option>
+
+                <option value="gym">
+                  Gym
+                </option>
+
+                <option value="running">
+                  Hardlopen
+                </option>
+
+                <option value="swimming">
+                  Zwemmen
+                </option>
               </select>
             </div>
 
             <div className="field">
-              <label>Datum & tijd</label>
+              <label>
+                Datum & tijd
+              </label>
+
               <input
                 name="started_at"
                 type="datetime-local"
                 required
-                defaultValue={new Date().toISOString().slice(0, 16)}
+                defaultValue={new Date()
+                  .toISOString()
+                  .slice(0, 16)}
               />
             </div>
 
             <div className="field">
-              <label>Duur in minuten</label>
+              <label>
+                Duur in minuten
+              </label>
+
               <input
                 name="duration_minutes"
                 type="number"
@@ -217,7 +429,11 @@ export default function SportPage() {
             </div>
 
             <div className="field">
-              <label>Afstand in km (optioneel)</label>
+              <label>
+                Afstand in km
+                (optioneel)
+              </label>
+
               <input
                 name="distance_km"
                 type="number"
@@ -228,7 +444,11 @@ export default function SportPage() {
             </div>
 
             <div className="field">
-              <label>Gem. hartslag (optioneel)</label>
+              <label>
+                Gemiddelde hartslag
+                (optioneel)
+              </label>
+
               <input
                 name="avg_heart_rate"
                 type="number"
@@ -239,7 +459,11 @@ export default function SportPage() {
             </div>
 
             <div className="field">
-              <label>Inspanning 1-10 (optioneel)</label>
+              <label>
+                Inspanning 1-10
+                (optioneel)
+              </label>
+
               <input
                 name="perceived_effort"
                 type="number"
@@ -250,22 +474,36 @@ export default function SportPage() {
             </div>
 
             <div className="field">
-              <label>Notitie (optioneel)</label>
+              <label>
+                Notitie (optioneel)
+              </label>
+
               <textarea
                 name="notes"
                 placeholder="Bijv. zware training, benen voelden goed"
               />
             </div>
 
-            <button className="btn" type="submit" disabled={saving}>
-              {saving ? "Opslaan..." : "Opslaan"}
+            <button
+              className="btn"
+              type="submit"
+              disabled={saving}
+            >
+              {saving
+                ? "Opslaan..."
+                : "Opslaan"}
             </button>
           </form>
         </div>
       )}
 
       {message && (
-        <div className="notice" style={{ marginBottom: 22 }}>
+        <div
+          className="notice"
+          style={{
+            marginBottom: 22,
+          }}
+        >
           {message}
         </div>
       )}
@@ -274,36 +512,64 @@ export default function SportPage() {
         <div className="card">
           <div className="metric">
             <div>
-              <div className="subtle">Deze week</div>
-              <div className="big" style={{ fontSize: "3rem" }}>
-                {loading ? "..." : `${weekCount}/${weekTarget}`}
+              <div className="subtle">
+                Deze week
+              </div>
+
+              <div
+                className="big"
+                style={{
+                  fontSize: "3rem",
+                }}
+              >
+                {loading
+                  ? "..."
+                  : `${weekCount}/${weekTarget}`}
               </div>
             </div>
 
-            <span className="pill">weekscore</span>
+            <span className="pill">
+              weekscore
+            </span>
           </div>
 
           <div className="progress">
-            <span style={{ width: `${progress}%` }} />
+            <span
+              style={{
+                width: `${progress}%`,
+              }}
+            />
           </div>
         </div>
 
         <div className="card">
-          <div className="subtle">Structureel</div>
+          <div className="subtle">
+            Structureel
+          </div>
 
           <div className="list">
             <div className="row">
-              <span>Woensdag · Voetbaltraining</span>
+              <span>
+                Woensdag ·
+                Voetbaltraining
+              </span>
+
               <strong>1,5u</strong>
             </div>
 
             <div className="row">
-              <span>Vrijdag · Padel</span>
+              <span>
+                Vrijdag · Padel
+              </span>
+
               <strong>2u</strong>
             </div>
 
             <div className="row">
-              <span>Zaterdag · Wedstrijd</span>
+              <span>
+                Zaterdag · Wedstrijd
+              </span>
+
               <strong>1,5u</strong>
             </div>
           </div>
@@ -316,53 +582,83 @@ export default function SportPage() {
 
       <div className="card">
         {sessions.length === 0 ? (
-          <>
-            <p className="subtle">
-              Nog geen sportmomenten geregistreerd.
-            </p>
-
-            <div className="notice">
-              Gym krijgt later sets/reps/gewicht en automatische
-              PR-herkenning. Hardlopen krijgt daarna tempo-analyse.
-            </div>
-          </>
+          <p className="subtle">
+            Nog geen sportmomenten
+            geregistreerd.
+          </p>
         ) : (
           <div className="list">
-            {sessions.slice(0, 12).map((session) => (
-              <div className="row" key={session.id}>
-                <span>
-                  <strong>{SPORT_LABELS[session.sport_type]}</strong>
-                  <br />
-                  <span className="subtle">
-                    {new Date(session.started_at).toLocaleDateString("nl-NL")}
+            {sessions
+              .slice(0, 12)
+              .map((session) => (
+                <div
+                  className="row"
+                  key={session.id}
+                >
+                  <span>
+                    <strong>
+                      {
+                        SPORT_LABELS[
+                          session
+                            .sport_type
+                        ]
+                      }
+                    </strong>
+
+                    <br />
+
+                    <span className="subtle">
+                      {new Date(
+                        session.started_at
+                      ).toLocaleDateString(
+                        "nl-NL"
+                      )}
+                    </span>
                   </span>
-                </span>
 
-                <span style={{ textAlign: "right" }}>
-                  <strong>
-                    {formatDuration(session.duration_minutes) ?? "—"}
-                  </strong>
+                  <span
+                    style={{
+                      textAlign:
+                        "right",
+                    }}
+                  >
+                    <strong>
+                      {formatDuration(
+                        session.duration_minutes
+                      ) ?? "—"}
+                    </strong>
 
-                  {session.distance_km !== null && (
-                    <>
-                      <br />
-                      <span className="subtle">
-                        {session.distance_km.toFixed(2)} km
-                      </span>
-                    </>
-                  )}
+                    {session.distance_km !==
+                      null && (
+                      <>
+                        <br />
 
-                  {session.perceived_effort !== null && (
-                    <>
-                      <br />
-                      <span className="subtle">
-                        RPE {session.perceived_effort}/10
-                      </span>
-                    </>
-                  )}
-                </span>
-              </div>
-            ))}
+                        <span className="subtle">
+                          {session.distance_km.toFixed(
+                            2
+                          )}{" "}
+                          km
+                        </span>
+                      </>
+                    )}
+
+                    {session.perceived_effort !==
+                      null && (
+                      <>
+                        <br />
+
+                        <span className="subtle">
+                          RPE{" "}
+                          {
+                            session.perceived_effort
+                          }
+                          /10
+                        </span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              ))}
           </div>
         )}
       </div>
