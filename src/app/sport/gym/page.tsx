@@ -1791,24 +1791,19 @@ export default function GymPage() {
               <div className="list">
                 {items.map(
                   (exercise) => (
-                    <div
-                      className="row"
-                      key={
-                        exercise.id
-                      }
-                    >
-                      <span>
-                        {
-                          exercise.name
-                        }
-                      </span>
+                   <Link
+  href={`/sport/gym/${exercise.id}`}
+  className="row"
+  key={exercise.id}
+>
+  <span>
+    {exercise.name}
+  </span>
 
-                      <strong>
-                        {getPR(
-                          exercise
-                        )}
-                      </strong>
-                    </div>
+  <strong>
+    {getPR(exercise)} →
+  </strong>
+</Link>
                   )
                 )}
               </div>
